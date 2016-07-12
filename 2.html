@@ -1,0 +1,285 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>WebViewer - STL</title>
+		<meta charset="utf-8">
+	</head>
+	<body style="background-color:black">
+	    <div style="text-align: center;">
+		    <button onclick="reset()">reset</button>
+			<button onclick="rotate()">旋转模式</button>
+            <button onclick="move()">平移模式</button><br>
+			<p style="color:white">滚轮放大缩小；平移模式下，拖动模型移动<br>
+			    <span id="myspan">当前模式：旋转模式</span>
+			</p>
+		</div>
+	    <div id = "mydiv"></div>
+		<script src="threejs/three.min.js"></script>
+		<script src="threejs/loaders/STLLoader.js"></script>
+		<script src="threejs/OrbitControls.js"></script>
+        <script src="threejs/CanvasRenderer.js"></script>
+		<script>
+		    var toMove = false;
+			var startMove = new THREE.Vector2();
+			var moveOffset = new THREE.Vector2();
+		    function rotate() {
+			    control.noRotate = false;
+				toMove = false;
+				document.getElementById("myspan").innerHTML = "当前模式：旋转模式";
+
+			}
+			function move() {
+			    control.noRotate = true;
+				toMove = true;
+				document.getElementById("myspan").innerHTML = "当前模式：平移模式";
+			}
+			function onMouseDown(event) {
+			    if(toMove === true) {
+				    startMove.set(event.clientX,event.clientY)
+				}
+
+				renderer.domElement.addEventListener('mousemove',onMouseMove,false);
+				renderer.domElement.addEventListener('mouseup',onMouseUp,false);
+			}
+			function onMouseMove(event) {
+			    if(toMove === true) {
+				    
+				    moveOffset.x = event.clientX - startMove.x;
+					moveOffset.y = event.clientY - startMove.y;
+					startMove.set(event.clientX,event.clientY)
+				    var originMarginLeft = renderer.domElement.style.marginLeft;
+					var originMarginTop = renderer.domElement.style.marginTop;
+					if(originMarginLeft !== "") {
+					    originMarginLeft = parseInt(originMarginLeft.replace("px",""));
+						var toMarginLeft = originMarginLeft + moveOffset.x;
+						
+						renderer.domElement.style.marginLeft = toMarginLeft < 0 ? 0 : toMarginLeft + "px";
+					} else {
+					    renderer.domElement.style.marginLeft = moveOffset.x < 0 ? 0 : moveOffset.x + "px";
+					}
+					
+					if(originMarginTop !== "") {
+					    originMarginTop = parseInt(originMarginTop.replace("px",""));
+						var toMarginTop = originMarginTop + moveOffset.y;
+						renderer.domElement.style.marginTop = toMarginTop < 0 ? 0 : toMarginTop + "px";
+					} else {
+					    renderer.domElement.style.marginTop = moveOffset.y < 0 ? 0 : moveOffset.y + "px";
+					}
+					//console.log(startMove);
+					//console.log(event.clientX + " " + event.clientY);
+					//console.log(moveOffset);
+					
+				}
+			}
+			function onMouseUp(event) {
+			    startMove = new THREE.Vector2();
+			    moveOffset = new THREE.Vector2();
+			    renderer.domElement.removeEventListener( 'mousemove', onMouseMove, false );
+		        renderer.domElement.removeEventListener( 'mouseup', onMouseUp, false );
+			}
+			
+		    function reset() {
+			    //cameraPosX=myGeometry.boundingSphere.center.x;cameraPosY=myGeometry.boundingSphere.center.y+100;cameraPosZ=myGeometry.boundingSphere.center.z;
+				cameraPosX=5.673945044709399;cameraPosY=305.38407135009766;cameraPosZ=6.104509853637751;
+				camera.position.set( cameraPosX, cameraPosY, cameraPosZ);
+				upVectorX=0;upVectorY=0;upVectorZ=1;
+				camera.up.set(upVectorX, upVectorY, upVectorZ);
+                cameraTargetX =0;cameraTargetY = 0;cameraTargetZ=0;
+				cameraTarget = new THREE.Vector3( cameraTargetX, cameraTargetY, cameraTargetZ );
+				camera.lookAt( cameraTarget );
+				control.target.x = targetX;
+				control.target.y = targetY;
+				control.target.z = targetZ;
+	
+			}
+			var targetX,targetY,targetZ;
+			var container;
+
+			var camera, cameraTarget, scene, renderer,control;
+			
+			var cameraType = 1;
+			var perspectiveAngle = 45;
+			var cameraPosX = 200;
+			var cameraPosY = 200;
+			var cameraPosZ = 200;
+			var cameraTargetX = 0;
+			var cameraTargetY = 0;
+			var cameraTargetZ = 0;
+			var upVectorX = 0;
+			var upVectorY = 1;
+			var upVectorZ = 0;
+			var cameralScale = 5;
+			var myGeometry;
+			init();
+			animate();
+			
+			function getQueryStringByName(name){
+				 var result = location.search.match(new RegExp("[\?\&]" + name+ "=([^\&]+)","i"));
+				
+				 if(result == null || result.length < 1){
+					 return "";
+				 }
+
+				 return result[1];
+			}
+
+			function init() {
+                container = document.getElementById( 'mydiv' );
+				//container = document.createElement( 'div' );
+				//document.body.appendChild( container );
+				
+				// set camera
+				var cameraTypeStr = getQueryStringByName('cameraType');
+				cameraType = cameraTypeStr == "" ? cameraType : parseInt(cameraTypeStr);
+				
+				var perspectiveAngleStr = getQueryStringByName('perspectiveAngle');
+				perspectiveAngle = perspectiveAngleStr == "" ? perspectiveAngle : parseFloat(perspectiveAngleStr);
+				
+				var cameraPosXStr = getQueryStringByName('cameraPosX');
+				cameraPosX = cameraPosXStr == "" ? cameraPosX : parseFloat(cameraPosXStr) * cameralScale;
+				
+				var cameraPosYStr = getQueryStringByName('cameraPosY');
+				cameraPosY = cameraPosYStr == "" ? cameraPosY : parseFloat(cameraPosYStr) * cameralScale;
+				
+				var cameraPosZStr = getQueryStringByName('cameraPosZ');
+				cameraPosZ = cameraPosZStr == "" ? cameraPosZ : parseFloat(cameraPosZStr) * cameralScale;
+				
+				var cameraTargetXStr = getQueryStringByName('cameraTargetX');
+				cameraTargetX = cameraTargetXStr == "" ? cameraTargetX : parseFloat(cameraTargetXStr) * cameralScale;
+				
+				var cameraTargetYStr = getQueryStringByName('cameraTargetY');
+				cameraTargetY = cameraTargetYStr == "" ? cameraTargetY : parseFloat(cameraTargetYStr) * cameralScale;
+				
+				var cameraTargetZStr = getQueryStringByName('cameraTargetZ');
+				cameraTargetZ = cameraTargetZStr == "" ? cameraTargetZ : parseFloat(cameraTargetZStr) * cameralScale;
+				
+				var upVectorXStr = getQueryStringByName('upVectorX');
+				upVectorX = upVectorXStr == "" ? upVectorX : parseFloat(upVectorXStr) * cameralScale;
+				
+				var upVectorYStr = getQueryStringByName('upVectorY');
+				upVectorY = upVectorYStr == "" ? upVectorY : parseFloat(upVectorYStr) * cameralScale;
+				
+				var upVectorZStr = getQueryStringByName('upVectorZ');
+				upVectorZ = upVectorZStr == "" ? upVectorZ : parseFloat(upVectorZStr) * cameralScale;
+				console.log(cameraType);
+				if(cameraType == 0) {
+					camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 10000 );
+				   
+				}
+				else {
+					camera = new THREE.PerspectiveCamera( perspectiveAngle, window.innerWidth / window.innerHeight, 1, 10000 );
+				}
+				cameraPosX=5.673945044709399;cameraPosY=305.38407135009766;cameraPosZ=6.104509853637751;
+				camera.position.set( cameraPosX, cameraPosY, cameraPosZ);
+				upVectorX=0;upVectorY=0;upVectorZ=1;
+				camera.up.set(upVectorX, upVectorY, upVectorZ);
+                cameraTargetX =0;cameraTargetY = 0;cameraTargetZ=0;
+				cameraTarget = new THREE.Vector3( cameraTargetX, cameraTargetY, cameraTargetZ );
+				camera.lookAt( cameraTarget );
+
+				scene = new THREE.Scene();
+				scene.fog = new THREE.Fog( 0xffffff, 1, 10000 );
+
+				// load file
+
+				var loader = new THREE.STLLoader();
+				var controlX,controlY,controlZ;
+				
+				var modelName = getQueryStringByName('modelName');
+				loader.load( 'Models/' + modelName, function ( geometry ) {
+
+					var material = new THREE.MeshPhongMaterial( { color: 0x808080, specular: 0x111111, shininess: 200 } );
+					var mesh = new THREE.Mesh( geometry, material );
+					mesh.castShadow = true;
+					mesh.receiveShadow = true;
+					myGeometry = geometry;
+					
+					//controlX = geometry.boundingSphere.center.x;
+					
+					
+					scene.add( mesh );
+
+				} );
+
+				// lights
+
+				scene.add( new THREE.AmbientLight( 0x333333 ) );
+				
+				addDirectionalLight(-1, 1, 1, 0xFFFFFF, 1.35);
+				addDirectionalLight(1, -1, -1, 0xFFFFFF, 1);
+
+				// renderer
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				//renderer.setClearColor( scene.fog.color );
+				renderer.setClearColor( 0x000000);
+				//renderer.setSize( window.innerWidth, window.innerHeight );
+                renderer.setSize(800, 400 );
+				renderer.gammaInput = true;
+				renderer.gammaOutput = true;
+
+				renderer.shadowMapEnabled = true;
+				renderer.shadowMapCullFace = THREE.CullFaceBack;
+
+				container.appendChild( renderer.domElement );
+				
+				// orbit control
+				control = new THREE.OrbitControls( camera, renderer.domElement );
+				// events
+				//prf
+				container.addEventListener('mousedown',onMouseDown,false);
+				container.addEventListener('mouseout',onMouseUp,false);
+				//prf
+
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+			
+			function addDirectionalLight( x, y, z, color, intensity ) {
+
+				var directionalLight = new THREE.DirectionalLight( color, intensity );
+				directionalLight.position.set( x, y, z )
+				scene.add( directionalLight );
+			}
+			
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				//renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setSize(800, 400 );
+
+			}
+
+			function animate() {
+				requestAnimationFrame( animate );
+
+				render();
+				
+			}
+			var controlTarget = false;
+			function render() {
+
+//				var timer = Date.now() * 0.0005;
+//
+//				camera.position.x = Math.cos( timer ) * 3;
+//				camera.position.z = Math.sin( timer ) * 3;
+
+				renderer.render( scene, camera );
+				//if(controlTarget == false &&)
+				//console.log(test1.boundingSphere.center);
+				if(controlTarget == false && myGeometry != undefined) {
+				    controlTarget = true;
+				    control.target = myGeometry.boundingSphere.center;
+					targetX = myGeometry.boundingSphere.center.x;
+					targetY = myGeometry.boundingSphere.center.y;
+					targetZ = myGeometry.boundingSphere.center.z;
+				
+				} 
+				//console.log(myGeometry);
+			}
+
+		</script>
+	</body>
+</html>
